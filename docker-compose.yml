@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: unolo_backend
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./backend/database.sqlite:/app/database.sqlite
+    environment:
+      - PORT=3001
+      - JWT_SECRET=development_secret_key
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: unolo_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
