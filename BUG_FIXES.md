@@ -41,3 +41,15 @@
 - **Symptom:** The history page would crash on load.
 - **Issue:** The `checkins` state was initialized to `null`, causing the `reduce` function to throw an error when attempting to process data before the API response arrived.
 - **Fix:** Initialized `checkins` state to an empty array `[]` to ensure safe iteration.
+
+## 8. Database Reset/Restart Loop (Environment)
+- **Location:** Server Configuration (likely `nodemon`)
+- **Symptom:** `SqliteError: attempt to write a readonly database` (Code: `SQLITE_READONLY_DBMOVED`) followed by database re-initialization logs.
+- **Issue:** The development server (`nodemon`) watches the `database.sqlite` file. Every database write triggers a server restart. If the startup script re-initializes the database on boot, it deletes the file while the write operation is still active or pending, causing the error.
+- **Fix:** Add `database.sqlite` to the ignore list in `nodemon.json` or `package.json` to prevent restarts on database updates.
+
+## 9. Manager Check-in Restriction
+- **Location:** `backend/routes/checkin.js`
+- **Symptom:** Managers could access check-in/check-out endpoints, which is not intended functionality for their role.
+- **Issue:** Missing role-based access control on check-in endpoints.
+- **Fix:** Added middleware logic to restrict `POST /` and `PUT /checkout` endpoints to users with the 'employee' role only.

@@ -24,6 +24,10 @@ router.get('/clients', authenticateToken, async (req, res) => {
 // Create new check-in
 router.post('/', authenticateToken, async (req, res) => {
     try {
+        if (req.user.role !== 'employee') {
+            return res.status(403).json({ success: false, message: 'Only employees can perform check-ins' });
+        }
+
         const { client_id, latitude, longitude, notes } = req.body;
 
         if (!client_id || !latitude || !longitude) {
@@ -75,6 +79,10 @@ router.post('/', authenticateToken, async (req, res) => {
 // Checkout from current location
 router.put('/checkout', authenticateToken, async (req, res) => {
     try {
+        if (req.user.role !== 'employee') {
+            return res.status(403).json({ success: false, message: 'Only employees can perform check-outs' });
+        }
+
         const [activeCheckins] = await pool.execute(
             'SELECT * FROM checkins WHERE employee_id = ? AND status = \'checked_in\' ORDER BY checkin_time DESC LIMIT 1',
             [req.user.id]
