@@ -137,6 +137,7 @@ function History({ user }) {
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Date</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Client</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Check-in</th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Distance</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Check-out</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Duration</th>
                                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-600">Notes</th>
@@ -160,6 +161,9 @@ function History({ user }) {
                                             <div className="text-xs text-gray-500">{checkin.client_address}</div>
                                         </td>
                                         <td className="px-4 py-3">{checkinTime.toLocaleTimeString()}</td>
+                                        <td className="px-4 py-3">
+                                            {checkin.distance ? `${Number(checkin.distance).toFixed(2)} km` : '-'}
+                                        </td>
                                         <td className="px-4 py-3">
                                             {checkoutTime ? checkoutTime.toLocaleTimeString() : '-'}
                                         </td>

@@ -85,3 +85,6 @@ incorrect column name usage
 bug 5
 
 
+manager visit /checkin/ it shows it to checkin, but i guess it isnt required, 
+
+

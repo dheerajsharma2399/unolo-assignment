@@ -36,13 +36,19 @@ router.post('/', authenticateToken, async (req, res) => {
 
         // Check if employee is assigned to this client
         const [assignments] = await pool.execute(
-            'SELECT * FROM employee_clients WHERE employee_id = ? AND client_id = ?',
+            `SELECT ec.*, c.latitude as client_lat, c.longitude as client_long 
+             FROM employee_clients ec
+             JOIN clients c ON ec.client_id = c.id
+             WHERE ec.employee_id = ? AND ec.client_id = ?`,
             [req.user.id, client_id]
         );
 
         if (assignments.length === 0) {
             return res.status(403).json({ success: false, message: 'You are not assigned to this client' });
         }
+
+        const client = assignments[0];
+        const distance = calculateDistance(latitude, longitude, client.client_lat, client.client_long);
 
         // Check for existing active check-in
         const [activeCheckins] = await pool.execute(
@@ -58,16 +64,17 @@ router.post('/', authenticateToken, async (req, res) => {
         }
 
         const [result] = await pool.execute(
-            `INSERT INTO checkins (employee_id, client_id, latitude, longitude, notes, status, checkin_time)
-             VALUES (?, ?, ?, ?, ?, 'checked_in', datetime('now'))`,
-            [req.user.id, client_id, latitude, longitude, notes || null]
+            `INSERT INTO checkins (employee_id, client_id, latitude, longitude, notes, status, checkin_time, distance)
+             VALUES (?, ?, ?, ?, ?, 'checked_in', datetime('now'), ?)`,
+            [req.user.id, client_id, latitude, longitude, notes || null, distance]
         );
 
         res.status(201).json({
             success: true,
             data: {
                 id: result.insertId,
-                message: 'Checked in successfully'
+                message: distance > 0.5 ? 'Checked in (Warning: You are far from client location)' : 'Checked in successfully',
+                distance_from_client: distance.toFixed(2)
             }
         });
     } catch (error) {
@@ -158,5 +165,21 @@ router.get('/active', authenticateToken, async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to fetch active check-in' });
     }
 });
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function deg2rad(deg) {
+    return deg * (Math.PI / 180);
+}
 
 module.exports = router;
