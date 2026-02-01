@@ -171,7 +171,15 @@ function CheckIn({ user }) {
 
             {/* Current Location Card */}
             <div className="bg-white rounded-lg shadow p-6 mb-6">
-                <h3 className="font-semibold mb-2">Your Current Location</h3>
+                <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-semibold">Your Current Location</h3>
+                    <button 
+                        onClick={getCurrentLocation}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                        Refresh Location
+                    </button>
+                </div>
                 {location ? (
                     <p className="text-gray-600">
                         Lat: {location.latitude.toFixed(6)}, Long: {location.longitude.toFixed(6)}
