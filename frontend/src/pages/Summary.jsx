@@ -31,6 +31,31 @@ function Summary({ user }) {
         setExpandedRow(expandedRow === employeeId ? null : employeeId);
     };
 
+    const downloadCSV = () => {
+        if (!data || !data.employee_reports) return;
+
+        const headers = ['Employee ID', 'Name', 'Email', 'Status', 'Total Check-ins', 'Unique Clients', 'Total Hours'];
+        const rows = data.employee_reports.map(emp => [
+            emp.id,
+            emp.name,
+            emp.email,
+            emp.status,
+            emp.total_checkins,
+            emp.unique_clients,
+            emp.total_hours
+        ]);
+
+        const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `daily_summary_${date}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     if (loading && !data) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -44,6 +69,13 @@ function Summary({ user }) {
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold">Daily Team Summary</h2>
                 <div className="flex items-center gap-2">
+                    <button
+                        onClick={downloadCSV}
+                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm font-medium mr-2"
+                        disabled={!data || data.employee_reports.length === 0}
+                    >
+                        Export CSV
+                    </button>
                     <label className="text-gray-600 font-medium">Date:</label>
                     <input 
                         type="date" 
