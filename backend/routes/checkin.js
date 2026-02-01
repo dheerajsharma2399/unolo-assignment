@@ -26,8 +26,8 @@ router.post('/', authenticateToken, async (req, res) => {
     try {
         const { client_id, latitude, longitude, notes } = req.body;
 
-        if (!client_id) {
-            return res.status(200).json({ success: false, message: 'Client ID is required' });
+        if (!client_id || !latitude || !longitude) {
+            return res.status(400).json({ success: false, message: 'Client ID and location are required' });
         }
 
         // Check if employee is assigned to this client
@@ -54,7 +54,7 @@ router.post('/', authenticateToken, async (req, res) => {
         }
 
         const [result] = await pool.execute(
-            `INSERT INTO checkins (employee_id, client_id, lat, lng, notes, status, checkin_time)
+            `INSERT INTO checkins (employee_id, client_id, latitude, longitude, notes, status, checkin_time)
              VALUES (?, ?, ?, ?, ?, 'checked_in', datetime('now'))`,
             [req.user.id, client_id, latitude, longitude, notes || null]
         );
@@ -118,7 +118,7 @@ router.get('/history', authenticateToken, async (req, res) => {
             params.push(end_date);
         }
 
-        query += ' ORDER BY ch.checkin_time DESC';
+        query += ' ORDER BY ch.checkin_time DESC LIMIT 100';
 
         const [checkins] = await pool.execute(query, params);
 

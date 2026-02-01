@@ -60,7 +60,7 @@ Add any notes about this visit...
 Check In"
 
 
-history doesnt work
+
 
 bug 1
 dashboard and checkin uses myqsl commands in sqlite database.
@@ -70,4 +70,18 @@ changed commands to be sqlite compatible.
 
 
 bug 2
-Missing checkin_time on Insert: SQLite does not automatically set the current timestamp for columns unless explicitly defined in the table schema with DEFAULT CURRENT_TIMESTAMP. The INSERT query in checkin.js was missing checkin_time, which results in NULL dates. This causes the history and dashboard queries (which filter by date) to return nothing for new check-ins.
+"Missing checkin_time on Insert: SQLite does not automatically set the current timestamp for columns unless explicitly defined in the table schema with DEFAULT CURRENT_TIMESTAMP. The INSERT query in checkin.js was missing checkin_time, which results in NULL dates. This causes the history and dashboard queries (which filter by date) to return nothing for new check-ins."
+
+bug 3 
+nothing on history page for both employee and manager.
+
+bug 4
+employee cant checkin to any client.
+
+incorrect column name usage
+
+"The error SqliteError: table checkins has no column named lat occurs because the database schema uses latitude and longitude as column names, but the INSERT query in checkin.js is trying to insert into columns named lat and lng."
+
+bug 5
+
+
