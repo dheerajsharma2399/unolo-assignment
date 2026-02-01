@@ -151,8 +151,8 @@ function Summary({ user }) {
                                                                         </td>
                                                                         <td className="px-4 py-2 text-sm text-gray-600">{activity.client_name}</td>
                                                                         <td className="px-4 py-2 text-sm text-gray-600">
-                                                                            {activity.distance ? `${Number(activity.distance).toFixed(2)} km` : '-'}
-                                                                            {activity.distance > 0.5 && (
+                                                                            {activity.distance_from_client ? `${Number(activity.distance_from_client).toFixed(2)} km` : '-'}
+                                                                            {activity.distance_from_client > 0.5 && (
                                                                                 <span className="text-red-500 ml-1 text-xs font-bold">(Far)</span>
                                                                             )}
                                                                         </td>

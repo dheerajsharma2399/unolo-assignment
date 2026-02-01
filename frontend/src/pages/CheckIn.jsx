@@ -11,13 +11,37 @@ function CheckIn({ user }) {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [distance, setDistance] = useState(null);
 
     useEffect(() => {
         if (user.role === 'employee') {
             fetchData();
             getCurrentLocation();
+
+            const interval = setInterval(getCurrentLocation, 120000);
+            return () => clearInterval(interval);
         }
     }, []);
+
+    // Calculate distance when client or location changes
+    useEffect(() => {
+        if (selectedClient && location && clients.length > 0) {
+            const client = clients.find(c => c.id == selectedClient);
+            if (client && client.latitude && client.longitude) {
+                const dist = calculateDistance(
+                    location.latitude,
+                    location.longitude,
+                    client.latitude,
+                    client.longitude
+                );
+                setDistance(dist);
+            } else {
+                setDistance(null);
+            }
+        } else {
+            setDistance(null);
+        }
+    }, [selectedClient, location, clients]);
 
     const fetchData = async () => {
         try {
@@ -202,6 +226,19 @@ function CheckIn({ user }) {
                             </select>
                         </div>
 
+                        {distance !== null && (
+                            <div className={`mb-4 p-3 rounded-md ${distance > 0.5 ? 'bg-yellow-50 border border-yellow-200' : 'bg-green-50 border border-green-200'}`}>
+                                <p className={`text-sm font-medium ${distance > 0.5 ? 'text-yellow-800' : 'text-green-800'}`}>
+                                    Distance from client: {distance.toFixed(2)} km
+                                </p>
+                                {distance > 0.5 && (
+                                    <p className="text-xs text-yellow-700 mt-1">
+                                        Warning: You are far from the client location.
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         <div className="mb-4">
                             <label className="block text-gray-700 text-sm font-medium mb-2">
                                 Notes (Optional)
@@ -227,6 +264,22 @@ function CheckIn({ user }) {
             )}
         </div>
     );
+}
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a = 
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}
+
+function deg2rad(deg) {
+    return deg * (Math.PI / 180);
 }
 
 export default CheckIn;

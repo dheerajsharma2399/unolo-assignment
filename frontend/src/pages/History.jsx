@@ -162,7 +162,7 @@ function History({ user }) {
                                         </td>
                                         <td className="px-4 py-3">{checkinTime.toLocaleTimeString()}</td>
                                         <td className="px-4 py-3">
-                                            {checkin.distance ? `${Number(checkin.distance).toFixed(2)} km` : '-'}
+                                            {checkin.distance_from_client ? `${Number(checkin.distance_from_client).toFixed(2)} km` : '-'}
                                         </td>
                                         <td className="px-4 py-3">
                                             {checkoutTime ? checkoutTime.toLocaleTimeString() : '-'}
