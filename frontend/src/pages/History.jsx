@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../utils/api';
 
 function History({ user }) {
@@ -71,6 +72,21 @@ function History({ user }) {
     return (
         <div>
             <h2 className="text-2xl font-bold mb-6">Check-in History</h2>
+
+            {user.role === 'manager' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex justify-between items-center">
+                    <div>
+                        <h3 className="font-bold text-blue-800">Daily Team Reports</h3>
+                        <p className="text-sm text-blue-600">View and export daily activity reports for your team.</p>
+                    </div>
+                    <Link 
+                        to="/summary" 
+                        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm font-medium"
+                    >
+                        Go to Daily Summary
+                    </Link>
+                </div>
+            )}
 
             {/* Filter Form */}
             <div className="bg-white rounded-lg shadow p-4 mb-6">

@@ -46,7 +46,7 @@
 - **Location:** Server Configuration (likely `nodemon`)
 - **Symptom:** `SqliteError: attempt to write a readonly database` (Code: `SQLITE_READONLY_DBMOVED`) followed by database re-initialization logs.
 - **Issue:** The development server (`nodemon`) watches the `database.sqlite` file. Every database write triggers a server restart. If the startup script re-initializes the database on boot, it deletes the file while the write operation is still active or pending, causing the error.
-- **Fix:** Created `nodemon.json` to ignore `database.sqlite` to prevent restarts on database updates.
+- **Fix:** Created `nodemon.json` to ignore `data/database.sqlite` to prevent restarts on database updates.
 
 ## 9. Manager Check-in Restriction
 - **Location:** `backend/routes/checkin.js`
