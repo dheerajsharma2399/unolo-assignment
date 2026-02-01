@@ -71,10 +71,22 @@ function CheckIn({ user }) {
                         latitude: position.coords.latitude,
                         longitude: position.coords.longitude
                     });
+                    setError('');
                 },
                 (err) => {
                     console.error('Location error:', err);
-                    setError('Location access is required to check in. Please enable location services.');
+                    let msg = 'Location access is required to check in. Please enable location services.';
+                    if (err.code === 1) msg = 'Permission denied. Please allow location access in your browser settings.';
+                    else if (err.code === 2) msg = 'Position unavailable. Please check your GPS or network connection.';
+                    else if (err.code === 3) msg = 'Location request timed out. Please try again.';
+                    
+                    setError(msg);
+                    alert(msg);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 20000,
+                    maximumAge: 0
                 }
             );
         }
@@ -171,7 +183,15 @@ function CheckIn({ user }) {
 
             {/* Current Location Card */}
             <div className="bg-white rounded-lg shadow p-6 mb-6">
-                <h3 className="font-semibold mb-2">Your Current Location</h3>
+                <div className="flex justify-between items-center mb-2">
+                    <h3 className="font-semibold">Your Current Location</h3>
+                    <button 
+                        onClick={getCurrentLocation}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                        Refresh Location
+                    </button>
+                </div>
                 {location ? (
                     <p className="text-gray-600">
                         Lat: {location.latitude.toFixed(6)}, Long: {location.longitude.toFixed(6)}
