@@ -2,7 +2,7 @@ const Database = require('better-sqlite3');
 const bcrypt = require('bcrypt');
 const path = require('path');
 
-const dbPath = path.join(__dirname, '..', 'database.sqlite');
+const dbPath = path.join(__dirname, '..', 'data', 'database.sqlite');
 
 // Delete existing database to start fresh
 const fs = require('fs');
