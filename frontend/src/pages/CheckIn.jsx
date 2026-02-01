@@ -50,8 +50,7 @@ function CheckIn({ user }) {
                 },
                 (err) => {
                     console.error('Location error:', err);
-                    // Set default location (Gurugram) for testing
-                    setLocation({ latitude: 28.4595, longitude: 77.0266 });
+                    setError('Location access is required to check in. Please enable location services.');
                 }
             );
         }

@@ -48,6 +48,11 @@ router.post('/', authenticateToken, async (req, res) => {
         }
 
         const client = assignments[0];
+
+        if (!client.client_lat || !client.client_long) {
+            return res.status(400).json({ success: false, message: 'Client location coordinates are missing' });
+        }
+
         const distance = calculateDistance(latitude, longitude, client.client_lat, client.client_long);
 
         // Check for existing active check-in
@@ -64,7 +69,7 @@ router.post('/', authenticateToken, async (req, res) => {
         }
 
         const [result] = await pool.execute(
-            `INSERT INTO checkins (employee_id, client_id, latitude, longitude, notes, status, checkin_time, distance)
+            `INSERT INTO checkins (employee_id, client_id, latitude, longitude, notes, status, checkin_time, distance_from_client)
              VALUES (?, ?, ?, ?, ?, 'checked_in', datetime('now'), ?)`,
             [req.user.id, client_id, latitude, longitude, notes || null, distance]
         );

@@ -3,51 +3,64 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 function Layout({ user, onLogout }) {
     const location = useLocation();
 
-    const navItems = [
-        { path: '/dashboard', label: 'Dashboard' },
-        { path: '/checkin', label: 'Check In' },
-        { path: '/history', label: 'History' }
-    ];
+    const isActive = (path) => {
+        return location.pathname === path ? 'bg-blue-700' : '';
+    };
 
     return (
         <div className="min-h-screen bg-gray-100">
-            {/* Header */}
-            <header className="bg-white shadow">
-                <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-                    <div className="flex items-center space-x-8">
-                        <h1 className="text-xl font-bold text-blue-600">Unolo Tracker</h1>
-                        <nav className="flex space-x-4">
-                            {navItems.map((item) => (
+            <nav className="bg-blue-600 text-white shadow-lg">
+                <div className="max-w-7xl mx-auto px-4">
+                    <div className="flex justify-between h-16">
+                        <div className="flex items-center">
+                            <span className="font-bold text-xl">Field Force Tracker</span>
+                            <div className="ml-10 flex items-baseline space-x-4">
                                 <Link
-                                    key={item.path}
-                                    to={item.path}
-                                    className={`px-3 py-2 rounded-md text-sm font-medium ${
-                                        location.pathname === item.path
-                                            ? 'bg-blue-100 text-blue-700'
-                                            : 'text-gray-600 hover:bg-gray-100'
-                                    }`}
+                                    to="/dashboard"
+                                    className={`px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 ${isActive('/dashboard')}`}
                                 >
-                                    {item.label}
+                                    Dashboard
                                 </Link>
-                            ))}
-                        </nav>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                        <span className="text-sm text-gray-600">
-                            {user.name} ({user.role})
-                        </span>
-                        <button
-                            onClick={onLogout}
-                            className="px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md"
-                        >
-                            Logout
-                        </button>
+                                
+                                {user.role === 'employee' && (
+                                    <Link
+                                        to="/checkin"
+                                        className={`px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 ${isActive('/checkin')}`}
+                                    >
+                                        Check In
+                                    </Link>
+                                )}
+
+                                <Link
+                                    to="/history"
+                                    className={`px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 ${isActive('/history')}`}
+                                >
+                                    History
+                                </Link>
+
+                                {user.role === 'manager' && (
+                                    <Link
+                                        to="/summary"
+                                        className={`px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-700 ${isActive('/summary')}`}
+                                    >
+                                        Summary
+                                    </Link>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex items-center">
+                            <span className="mr-4 text-sm">{user.name} ({user.role})</span>
+                            <button
+                                onClick={onLogout}
+                                className="bg-red-500 hover:bg-red-600 px-3 py-1 rounded text-sm"
+                            >
+                                Logout
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </header>
-
-            {/* Main Content */}
-            <main className="max-w-7xl mx-auto px-4 py-6">
+            </nav>
+            <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
                 <Outlet />
             </main>
         </div>
