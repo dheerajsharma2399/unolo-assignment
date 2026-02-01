@@ -16,9 +16,9 @@ function CheckIn({ user }) {
     useEffect(() => {
         if (user.role === 'employee') {
             fetchData();
-            getCurrentLocation();
+            getCurrentLocation(false);
 
-            const interval = setInterval(getCurrentLocation, 120000);
+            const interval = setInterval(() => getCurrentLocation(true), 120000);
             return () => clearInterval(interval);
         }
     }, []);
@@ -63,7 +63,7 @@ function CheckIn({ user }) {
         }
     };
 
-    const getCurrentLocation = () => {
+    const getCurrentLocation = (isBackground = false) => {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -76,12 +76,12 @@ function CheckIn({ user }) {
                 (err) => {
                     console.error('Location error:', err);
                     let msg = 'Location access is required to check in. Please enable location services.';
-                    if (err.code === 1) msg = 'Permission denied. Please allow location access in your browser settings.';
+                    if (err.code === 1) msg = 'Permission denied. Click the lock/info icon in your address bar to allow location access.';
                     else if (err.code === 2) msg = 'Position unavailable. Please check your GPS or network connection.';
                     else if (err.code === 3) msg = 'Location request timed out. Please try again.';
                     
                     setError(msg);
-                    alert(msg);
+                    if (!isBackground) alert(msg);
                 },
                 {
                     enableHighAccuracy: true,
@@ -186,7 +186,7 @@ function CheckIn({ user }) {
                 <div className="flex justify-between items-center mb-2">
                     <h3 className="font-semibold">Your Current Location</h3>
                     <button 
-                        onClick={getCurrentLocation}
+                        onClick={() => getCurrentLocation(false)}
                         className="text-sm text-blue-600 hover:text-blue-800 font-medium"
                     >
                         Refresh Location
