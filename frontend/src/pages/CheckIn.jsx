@@ -13,8 +13,10 @@ function CheckIn({ user }) {
     const [success, setSuccess] = useState('');
 
     useEffect(() => {
-        fetchData();
-        getCurrentLocation();
+        if (user.role === 'employee') {
+            fetchData();
+            getCurrentLocation();
+        }
     }, []);
 
     const fetchData = async () => {
@@ -103,6 +105,22 @@ function CheckIn({ user }) {
             setSubmitting(false);
         }
     };
+
+    if (user.role === 'manager') {
+        return (
+            <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
+                <div className="bg-gray-100 p-6 rounded-full mb-6">
+                    <svg className="w-12 h-12 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">Employee Access Only</h2>
+                <p className="text-gray-600 max-w-md">
+                    Managers do not need to check in. Please use the Dashboard to view team activities and reports.
+                </p>
+            </div>
+        );
+    }
 
     if (loading) {
         return (
