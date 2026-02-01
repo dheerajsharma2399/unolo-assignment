@@ -42,7 +42,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
         // Check for existing active check-in
         const [activeCheckins] = await pool.execute(
-            'SELECT * FROM checkins WHERE employee_id = ? AND status = "checked_in"',
+            'SELECT * FROM checkins WHERE employee_id = ? AND status = \'checked_in\'',
             [req.user.id]
         );
 
@@ -54,8 +54,8 @@ router.post('/', authenticateToken, async (req, res) => {
         }
 
         const [result] = await pool.execute(
-            `INSERT INTO checkins (employee_id, client_id, lat, lng, notes, status)
-             VALUES (?, ?, ?, ?, ?, 'checked_in')`,
+            `INSERT INTO checkins (employee_id, client_id, lat, lng, notes, status, checkin_time)
+             VALUES (?, ?, ?, ?, ?, 'checked_in', datetime('now'))`,
             [req.user.id, client_id, latitude, longitude, notes || null]
         );
 
@@ -76,7 +76,7 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/checkout', authenticateToken, async (req, res) => {
     try {
         const [activeCheckins] = await pool.execute(
-            'SELECT * FROM checkins WHERE employee_id = ? ORDER BY checkin_time DESC LIMIT 1',
+            'SELECT * FROM checkins WHERE employee_id = ? AND status = \'checked_in\' ORDER BY checkin_time DESC LIMIT 1',
             [req.user.id]
         );
 
@@ -85,7 +85,7 @@ router.put('/checkout', authenticateToken, async (req, res) => {
         }
 
         await pool.execute(
-            'UPDATE checkins SET checkout_time = NOW(), status = "checked_out" WHERE id = ?',
+            'UPDATE checkins SET checkout_time = datetime(\'now\'), status = \'checked_out\' WHERE id = ?',
             [activeCheckins[0].id]
         );
 
@@ -110,10 +110,12 @@ router.get('/history', authenticateToken, async (req, res) => {
         const params = [req.user.id];
 
         if (start_date) {
-            query += ` AND DATE(ch.checkin_time) >= '${start_date}'`;
+            query += ' AND DATE(ch.checkin_time) >= ?';
+            params.push(start_date);
         }
         if (end_date) {
-            query += ` AND DATE(ch.checkin_time) <= '${end_date}'`;
+            query += ' AND DATE(ch.checkin_time) <= ?';
+            params.push(end_date);
         }
 
         query += ' ORDER BY ch.checkin_time DESC';
