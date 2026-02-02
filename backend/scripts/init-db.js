@@ -146,6 +146,10 @@ insertCheckin.run(2, 1, '2024-01-16 09:00:00', null, 28.4950, 77.0890, 'Morning 
 
 console.log('Sample checkins created');
 
+// Verify users exist
+const allUsers = db.prepare('SELECT email, role FROM users').all();
+console.log('✅ Verified Users in DB:', JSON.stringify(allUsers, null, 2));
+
 db.close();
 console.log('\n✅ Database initialized successfully!');
 console.log('Database file: database.sqlite');
