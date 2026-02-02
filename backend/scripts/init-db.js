@@ -151,5 +151,14 @@ const allUsers = db.prepare('SELECT email, role FROM users').all();
 console.log('✅ Verified Users in DB:', JSON.stringify(allUsers, null, 2));
 
 db.close();
+
+// FIX: Set permissions so the app (running as 'node' user) can read/write the file created by 'root'
+try {
+    fs.chmodSync(dbPath, 0o666);
+    console.log('Permissions updated to 0666 (Read/Write for all)');
+} catch (err) {
+    console.warn('Could not set permissions:', err.message);
+}
+
 console.log('\n✅ Database initialized successfully!');
 console.log('Database file: database.sqlite');
