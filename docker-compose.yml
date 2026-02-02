@@ -6,6 +6,7 @@ services:
       context: ./backend
       args:
         - BUILDKIT_INLINE_CACHE=0
+    container_name: backend
     ports:
       - "9007:9007"
     volumes:
@@ -23,9 +24,12 @@ services:
       - traefik.http.routers.backend.rule=Host(`dmm.mooh.me`) && (PathPrefix(`/auth`) || PathPrefix(`/dashboard`) || PathPrefix(`/checkin`) || PathPrefix(`/api`))
       - traefik.http.routers.backend.entrypoints=websecure
       - traefik.http.routers.backend.tls.certresolver=letsencrypt
+      - traefik.http.middlewares.api-strip.stripprefix.prefixes=/api
+      - traefik.http.routers.backend.middlewares=api-strip
 
   frontend:
     build: ./frontend
+    container_name: frontend
     ports:
       - "9006:9006"
     restart: always
