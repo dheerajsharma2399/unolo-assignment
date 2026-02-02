@@ -243,6 +243,18 @@ function CheckIn({ user }) {
                     <p className="text-sm text-blue-600 mt-1">
                         Since: {new Date(activeCheckin.checkin_time).toLocaleString()}
                     </p>
+                    {activeCheckin.distance_from_client != null && (
+                        <div className="mt-2">
+                            <p className="text-sm text-blue-700">
+                                Distance: {Number(activeCheckin.distance_from_client).toFixed(2)} km
+                            </p>
+                            {Number(activeCheckin.distance_from_client) > 0.5 && (
+                                <p className="text-xs text-red-600 font-bold mt-1">
+                                    Warning: You are far from the client location.
+                                </p>
+                            )}
+                        </div>
+                    )}
                     <button
                         onClick={handleCheckOut}
                         disabled={submitting}
