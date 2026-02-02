@@ -256,7 +256,7 @@ class TestSuite {
                 if (testError) {
                     console.log(`${COLORS.red}    Error: ${testError.message}${COLORS.reset}`);
                 }
-                results.errors.push({ suite: this.name, test: testName, error: testError?.message });
+                results.errors.push({ suite: this.name, test: testName, error: testError ? testError.message : null });
             }
         }
 
