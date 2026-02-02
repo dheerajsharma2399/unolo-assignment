@@ -85,6 +85,13 @@ async function runTests() {
         assert(loginEmp.status === 200 && loginEmp.data.success, 'Employee Login');
         employeeToken = loginEmp.data.data.token;
 
+        // Employee Login (Priya)
+        const loginPriya = await request('/auth/login', 'POST', null, {
+            email: 'priya@unolo.com',
+            password: 'password123'
+        });
+        assert(loginPriya.status === 200 && loginPriya.data.success, 'Employee (Priya) Login');
+
     } catch (e) {
         console.error(`${RED}Critical Auth Failure:${RESET}`, e.message);
         return;
