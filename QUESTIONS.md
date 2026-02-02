@@ -4,7 +4,7 @@
 **Question:** If this app had 10,000 employees checking in simultaneously, what would break first? How would you fix it?
 
 **Answer:**
-The first breaking point would be the **SQLite database**. SQLite is a file-based database that allows only one write operation at a time. 10,000 concurrent write requests (check-ins) would result in:
+The first breaking point would be the sqlite db. SQLite is a file based database that allows only one write operation at a time. 10,000 concurrent write requests would result in: man
 - `SQLITE_BUSY` errors as processes fight for the write lock.
 - High latency and request timeouts.
 - Potential data loss if the server crashes under load.
