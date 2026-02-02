@@ -11,41 +11,18 @@ services:
       - PORT=9007
       - JWT_SECRET=development_secret_key_v2
     restart: always
-    healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('net').connect(9007).on('connect', ()=>process.exit(0)).on('error', ()=>process.exit(1))\""]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 10s
     networks:
       - app-network
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.backend.rule=Host(`dmm.mooh.me`)
-      - traefik.http.routers.backend.entrypoints=websecure
-      - traefik.http.routers.backend.tls.certresolver=letsencrypt
-      - traefik.http.services.backend.loadbalancer.server.port=9007
-      - traefik.http.middlewares.backend-strip.stripprefix.prefixes=/api
-      - traefik.http.routers.backend.middlewares=backend-strip@docker
 
   frontend:
     build: ./frontend
     ports:
       - "9006:9006"
-    depends_on:
-      backend:
-        condition: service_healthy
     restart: always
     environment:
-      - VITE_API_URL=http://backend:9007
+      - VITE_API_URL=/api
     networks:
       - app-network
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.frontend.rule=Host(`dmm.mooh.me`) && PathPrefix(`/`)
-      - traefik.http.routers.frontend.entrypoints=websecure
-      - traefik.http.routers.frontend.tls.certresolver=letsencrypt
-      - traefik.http.services.frontend.loadbalancer.server.port=9006
 
 networks:
   app-network:
