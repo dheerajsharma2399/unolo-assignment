@@ -88,18 +88,18 @@ db.exec(`
 
 console.log('Tables created');
 
-// Hash password
-const hashedPassword = bcrypt.hashSync('password123', 10);
+// Hash password (use hardcoded hash for consistency)
+const HASHED_PASSWORD = '$2b$10$MF9Y9DHObFzJKGWmpvtlp.mZSqWQHQfJOPWSQebCyTyTa59f0CGUG';
 
 // Insert users
 const insertUser = db.prepare(`
     INSERT INTO users (name, email, password, role, manager_id) VALUES (?, ?, ?, ?, ?)
 `);
 
-insertUser.run('Amit Sharma', 'manager@unolo.com', hashedPassword, 'manager', null);
-insertUser.run('Rahul Kumar', 'rahul@unolo.com', hashedPassword, 'employee', 1);
-insertUser.run('Priya Singh', 'priya@unolo.com', hashedPassword, 'employee', 1);
-insertUser.run('Vikram Patel', 'vikram@unolo.com', hashedPassword, 'employee', 1);
+insertUser.run('Amit Sharma', 'manager@unolo.com', HASHED_PASSWORD, 'manager', null);
+insertUser.run('Rahul Kumar', 'rahul@unolo.com', HASHED_PASSWORD, 'employee', 1);
+insertUser.run('Priya Singh', 'priya@unolo.com', HASHED_PASSWORD, 'employee', 1);
+insertUser.run('Vikram Patel', 'vikram@unolo.com', HASHED_PASSWORD, 'employee', 1);
 
 console.log('Users created');
 
