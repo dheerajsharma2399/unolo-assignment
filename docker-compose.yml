@@ -13,16 +13,28 @@ services:
     restart: always
     networks:
       - app-network
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.backend.rule=Host(`dmm.mooh.me`)
+      - traefik.http.routers.backend.entrypoints=websecure
+      - traefik.http.routers.backend.tls.certresolver=letsencrypt
+      - traefik.http.services.backend.loadbalancer.server.port=9007
+      - traefik.http.middlewares.backend-strip.stripprefix.prefixes=/api
+      - traefik.http.routers.backend.middlewares=backend-strip@docker
 
   frontend:
     build: ./frontend
     ports:
       - "9006:9006"
     restart: always
-    environment:
-      - VITE_API_URL=/api
     networks:
       - app-network
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.frontend.rule=Host(`dmm.mooh.me`)
+      - traefik.http.routers.frontend.entrypoints=websecure
+      - traefik.http.routers.frontend.tls.certresolver=letsencrypt
+      - traefik.http.services.frontend.loadbalancer.server.port=9006
 
 networks:
   app-network:
