@@ -3,10 +3,10 @@ USE unolo_tracker;
 
 -- Insert users (password is 'password123' hashed with bcrypt)
 INSERT INTO users (name, email, password, role, manager_id) VALUES
-('Amit Sharma', 'manager@unolo.com', '$2b$10$5QzV5G5X5Y5Z5A5B5C5D5e5f5g5h5i5j5k5l5m5n5o5p5q5r5s5t5', 'manager', NULL),
-('Rahul Kumar', 'rahul@unolo.com', '$2b$10$5QzV5G5X5Y5Z5A5B5C5D5e5f5g5h5i5j5k5l5m5n5o5p5q5r5s5t5', 'employee', 1),
-('Priya Singh', 'priya@unolo.com', '$2b$10$5QzV5G5X5Y5Z5A5B5C5D5e5f5g5h5i5j5k5l5m5n5o5p5q5r5s5t5', 'employee', 1),
-('Vikram Patel', 'vikram@unolo.com', '$2b$10$5QzV5G5X5Y5Z5A5B5C5D5e5f5g5h5i5j5k5l5m5n5o5p5q5r5s5t5', 'employee', 1);
+('Amit Sharma', 'manager@unolo.com', '$2b$10$/V1uvcvSlX7F1QV1/KO5CeJwxSPJ9Ro1YJWGqTARHoqS2ME5EEhMi', 'manager', NULL),
+('Rahul Kumar', 'rahul@unolo.com', '$2b$10$/V1uvcvSlX7F1QV1/KO5CeJwxSPJ9Ro1YJWGqTARHoqS2ME5EEhMi', 'employee', 1),
+('Priya Singh', 'priya@unolo.com', '$2b$10$/V1uvcvSlX7F1QV1/KO5CeJwxSPJ9Ro1YJWGqTARHoqS2ME5EEhMi', 'employee', 1),
+('Vikram Patel', 'vikram@unolo.com', '$2b$10$/V1uvcvSlX7F1QV1/KO5CeJwxSPJ9Ro1YJWGqTARHoqS2ME5EEhMi', 'employee', 1);
 
 -- Insert clients (locations in Gurugram/Delhi NCR)
 INSERT INTO clients (name, address, latitude, longitude) VALUES
