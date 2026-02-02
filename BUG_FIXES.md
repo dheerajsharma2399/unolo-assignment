@@ -83,3 +83,14 @@
 - **Symptom:** Page crash if API returns null/undefined data.
 - **Issue:** While state was initialized to `[]`, `setCheckins(response.data.data)` could set it to null if the API response was empty, leading to `reduce` failure.
 - **Fix:** Added safe navigation `(checkins || [])` in the render and calculation logic.
+
+
+However, for this feature to work fully, you need to ensure the Database has the new column and the Frontend is updated to display the data. Since I do not have access to the database schema or frontend files in the context, I cannot modify them directly, but here are the steps you need to take.
+
+1. Update Database Schema
+The INSERT statement in backend/routes/checkin.js expects a column named distance_from_client in the checkins table. You need to add this column to your SQLite database.
+
+Run this SQL command (you can use a tool like DB Browser for SQLite or the sqlite3 CLI):
+
+sql
+ALTER TABLE checkins ADD COLUMN distance_from_client REAL;

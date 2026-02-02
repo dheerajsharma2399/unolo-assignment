@@ -10,7 +10,7 @@ services:
       - /home/ubuntu/unolo:/app/data
     environment:
       - PORT=3001
-      - JWT_SECRET=development_secret_key
+      - JWT_SECRET=development_secret_key_v2
     restart: always
 
   frontend:
