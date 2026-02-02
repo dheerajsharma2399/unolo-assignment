@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
 
@@ -43,15 +43,17 @@ function History({ user }) {
         fetchHistory();
     };
 
-    const totalHours = (checkins || []).reduce((total, checkin) => {
-        if (checkin.checkout_time) {
-            const checkinTime = new Date(checkin.checkin_time);
-            const checkoutTime = new Date(checkin.checkout_time);
-            const hours = (checkoutTime - checkinTime) / (1000 * 60 * 60);
-            return total + hours;
-        }
-        return total;
-    }, 0);
+    const totalHours = useMemo(() => {
+        return (checkins || []).reduce((total, checkin) => {
+            if (checkin.checkout_time) {
+                const checkinTime = new Date(checkin.checkin_time);
+                const checkoutTime = new Date(checkin.checkout_time);
+                const hours = (checkoutTime - checkinTime) / (1000 * 60 * 60);
+                return total + hours;
+            }
+            return total;
+        }, 0);
+    }, [checkins]);
 
     if (loading) {
         return (

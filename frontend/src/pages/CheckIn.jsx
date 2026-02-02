@@ -121,27 +121,35 @@ function CheckIn({ user }) {
         setSuccess('');
         setSubmitting(true);
 
-        try {
-            const response = await api.post('/checkin', {
-                client_id: selectedClient,
-                latitude: location?.latitude,
-                longitude: location?.longitude,
-                notes: notes
-            });
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                try {
+                    const response = await api.post('/checkin', {
+                        client_id: selectedClient,
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        notes: notes
+                    });
 
-            if (response.data.success) {
-                setSuccess('Checked in successfully!');
-                setSelectedClient('');
-                setNotes('');
-                fetchData(); // Refresh data
-            } else {
-                setError(response.data.message);
+                    if (response.data.success) {
+                        setSuccess(response.data.data.message);
+                        setSelectedClient('');
+                        setNotes('');
+                        fetchData(); // Refresh data
+                    } else {
+                        setError(response.data.message);
+                    }
+                } catch (err) {
+                    setError(err.response?.data?.message || 'Check-in failed');
+                } finally {
+                    setSubmitting(false);
+                }
+            },
+            (err) => {
+                setError('Failed to retrieve location for check-in.');
+                setSubmitting(false);
             }
-        } catch (err) {
-            setError(err.response?.data?.message || 'Check-in failed');
-        } finally {
-            setSubmitting(false);
-        }
+        );
     };
 
     const handleCheckOut = async () => {
