@@ -21,6 +21,7 @@ if (!fs.existsSync(dbPath)) {
 const authRoutes = require('./routes/auth');
 const checkinRoutes = require('./routes/checkin');
 const dashboardRoutes = require('./routes/dashboard');
+const reportsRoutes = require('./routes/reports');
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/checkin', checkinRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/reports', reportsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

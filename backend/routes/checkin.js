@@ -30,7 +30,7 @@ router.post('/', authenticateToken, async (req, res) => {
 
         const { client_id, latitude, longitude, notes } = req.body;
 
-        if (!client_id || !latitude || !longitude) {
+        if (!client_id || latitude === undefined || longitude === undefined) {
             return res.status(400).json({ success: false, message: 'Client ID and location are required' });
         }
 
@@ -62,7 +62,7 @@ router.post('/', authenticateToken, async (req, res) => {
         );
 
         if (activeCheckins.length > 0) {
-            return res.status(400).json({ 
+            return res.status(409).json({ 
                 success: false, 
                 message: 'You already have an active check-in. Please checkout first.' 
             });

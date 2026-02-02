@@ -8,7 +8,7 @@ function Counter({ initialValue = 0, showDouble = true }) {
     useEffect(() => {
         if (isRunning) {
             const interval = setInterval(() => {
-                setCount(count + 1);
+                setCount(c => c + 1);
             }, 1000);
             return () => clearInterval(interval);
         }

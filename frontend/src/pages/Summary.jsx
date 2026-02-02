@@ -15,7 +15,7 @@ function Summary({ user }) {
     const fetchSummary = async () => {
         try {
             setLoading(true);
-            const response = await api.get(`/dashboard/summary?date=${date}`);
+            const response = await api.get(`/reports/daily-summary?date=${date}`);
             if (response.data.success) {
                 setData(response.data.data);
             }

@@ -53,3 +53,33 @@
 - **Symptom:** Managers could access check-in/check-out endpoints, which is not intended functionality for their role.
 - **Issue:** Missing role-based access control on check-in endpoints.
 - **Fix:** Added middleware logic to restrict `POST /` and `PUT /checkout` endpoints to users with the 'employee' role only.
+
+## 10. Frontend: Check-in Form Submission Failure
+- **Location:** `frontend/src/pages/CheckIn.jsx`
+- **Symptom:** Clicking "Check In" reloads the page instead of submitting the form.
+- **Issue:** The `handleCheckIn` function was missing `e.preventDefault()`, causing the default form submission behavior (page reload).
+- **Fix:** Added `e.preventDefault()` to the event handler.
+
+## 11. Counter Component Stale Closure
+- **Location:** `frontend/src/components/Counter.jsx`
+- **Symptom:** The counter toggles between initial value and initial+1 instead of incrementing continuously.
+- **Issue:** The `setInterval` callback closed over the initial `count` variable.
+- **Fix:** Updated `setCount` to use the functional update form `setCount(c => c + 1)`.
+
+## 12. Backend: Coordinate Validation Bug
+- **Location:** `backend/routes/checkin.js`
+- **Symptom:** Check-ins at the equator (latitude 0) or prime meridian (longitude 0) would fail validation.
+- **Issue:** The validation `if (!latitude)` treated `0` as falsy/invalid.
+- **Fix:** Changed validation to strictly check for `undefined` (`latitude === undefined`).
+
+## 13. API Status Codes: Concurrent Check-ins
+- **Location:** `backend/routes/checkin.js`
+- **Symptom:** Trying to check in while already checked in returned a generic 400 Bad Request.
+- **Issue:** Use of 400 status code for a state conflict.
+- **Fix:** Changed status code to 409 (Conflict) for better semantic correctness.
+
+## 14. Frontend: History Page Crash (Robustness)
+- **Location:** `frontend/src/pages/History.jsx`
+- **Symptom:** Page crash if API returns null/undefined data.
+- **Issue:** While state was initialized to `[]`, `setCheckins(response.data.data)` could set it to null if the API response was empty, leading to `reduce` failure.
+- **Fix:** Added safe navigation `(checkins || [])` in the render and calculation logic.
