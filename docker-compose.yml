@@ -18,14 +18,6 @@ services:
     restart: always
     networks:
       - app-network
-    labels:
-      - traefik.enable=true
-      - traefik.http.services.backend.loadbalancer.server.port=9007
-      - traefik.http.routers.backend.rule=Host(`dmm.mooh.me`) && PathPrefix(`/api`)
-      - traefik.http.routers.backend.entrypoints=websecure
-      - traefik.http.routers.backend.tls.certresolver=letsencrypt
-      - traefik.http.middlewares.api-strip.stripprefix.prefixes=/api
-      - traefik.http.routers.backend.middlewares=api-strip
 
   frontend:
     build: ./frontend
@@ -35,12 +27,6 @@ services:
     restart: always
     networks:
       - app-network
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.frontend.rule=Host(`dmm.mooh.me`)
-      - traefik.http.routers.frontend.entrypoints=websecure
-      - traefik.http.routers.frontend.tls.certresolver=letsencrypt
-      - traefik.http.services.frontend.loadbalancer.server.port=9006
 
   # Test runner service - run with: docker compose run test
 networks:
