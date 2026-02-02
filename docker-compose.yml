@@ -7,7 +7,7 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./backend/data:/app/data
+      - /home/ubuntu/unolo:/app/data
     environment:
       - PORT=3001
       - JWT_SECRET=development_secret_key
