@@ -16,10 +16,33 @@ function CheckIn({ user }) {
     useEffect(() => {
         if (user.role === 'employee') {
             fetchData();
+            
+            // Initial fetch
             getCurrentLocation(false);
 
-            const interval = setInterval(() => getCurrentLocation(true), 120000);
-            return () => clearInterval(interval);
+            // Real-time tracking
+            let watchId;
+            if (navigator.geolocation) {
+                watchId = navigator.geolocation.watchPosition(
+                    (position) => {
+                        setLocation({
+                            latitude: position.coords.latitude,
+                            longitude: position.coords.longitude
+                        });
+                        setError('');
+                    },
+                    (err) => console.error('Watch Position Error:', err),
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 20000,
+                        maximumAge: 0
+                    }
+                );
+            }
+
+            return () => {
+                if (watchId) navigator.geolocation.clearWatch(watchId);
+            };
         }
     }, []);
 
