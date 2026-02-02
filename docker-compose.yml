@@ -12,6 +12,11 @@ services:
       - PORT=3001
       - JWT_SECRET=development_secret_key_v2
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('net').connect(3001).on('connect', ()=>process.exit(0)).on('error', ()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   frontend:
     build: ./frontend
@@ -19,5 +24,6 @@ services:
     ports:
       - "9006:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: always
