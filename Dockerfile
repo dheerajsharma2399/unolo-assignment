@@ -10,18 +10,15 @@ RUN npm run build
 FROM node:18-alpine AS backend-builder
 WORKDIR /app/backend
 COPY backend/package*.json ./
-# Install build tools for native modules (better-sqlite3)
-RUN apk add --no-cache python3 make g++
 RUN npm install --production
 COPY backend/ .
 
-# Stage 3: Final Image (Node 18 + Nginx)
-# Use node:18-alpine to ensure runtime matches build time (ABI compatibility)
-FROM node:18-alpine
+# Stage 3: Final Image (Nginx + Node)
+FROM nginx:alpine
 WORKDIR /app
 
-# Install Nginx
-RUN apk add --no-cache nginx && mkdir -p /run/nginx
+# Install Node.js and NPM to run the backend alongside Nginx
+RUN apk add --no-cache nodejs npm
 
 # Copy Backend
 COPY --from=backend-builder /app/backend /app/backend
@@ -30,8 +27,7 @@ COPY --from=backend-builder /app/backend /app/backend
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
 # Copy Configs
-# Alpine Nginx package uses http.d, not conf.d
-COPY nginx.conf /etc/nginx/http.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY entrypoint.sh /entrypoint.sh
 
 # Fix line endings (for Windows hosts) and permissions
