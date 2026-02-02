@@ -2,7 +2,10 @@ version: '3.8'
 
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      args:
+        - BUILDKIT_INLINE_CACHE=0
     ports:
       - "9007:9007"
     volumes:
