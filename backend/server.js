@@ -29,6 +29,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Disable caching for API routes
+app.use('/api', (req, res, next) => {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    next();
+});
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/checkin', checkinRoutes);
