@@ -5,17 +5,19 @@ const path = require('path');
 const { execSync } = require('child_process');
 require('dotenv').config();
 
-// Auto-initialize database if it doesn't exist
+// Always reinitialize database on startup (fresh deploy = fresh data)
 const dbPath = path.join(__dirname, 'data', 'database.sqlite');
-if (!fs.existsSync(dbPath)) {
-    console.log('Database not found. Initializing...');
-    try {
-        execSync('node scripts/init-db.js', { stdio: 'inherit' });
-        console.log('Database initialization complete.');
-    } catch (error) {
-        console.error('Failed to initialize database:', error);
-        process.exit(1);
+console.log('Initializing database...');
+try {
+    if (fs.existsSync(dbPath)) {
+        fs.unlinkSync(dbPath);
+        console.log('Deleted existing database');
     }
+    execSync('node scripts/init-db.js', { stdio: 'inherit' });
+    console.log('Database initialization complete.');
+} catch (error) {
+    console.error('Failed to initialize database:', error);
+    process.exit(1);
 }
 
 const authRoutes = require('./routes/auth');
