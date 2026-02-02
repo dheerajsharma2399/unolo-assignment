@@ -5,6 +5,8 @@ const pool = require('../config/database');
 
 const router = express.Router();
 
+const JWT_SECRET = process.env.JWT_SECRET || 'default-secret-key';
+
 // Login
 router.post('/login', async (req, res) => {
     try {
@@ -33,7 +35,7 @@ router.post('/login', async (req, res) => {
 
         const token = jwt.sign(
             { id: user.id, email: user.email, role: user.role, name: user.name },
-            process.env.JWT_SECRET,
+            JWT_SECRET,
             { expiresIn: '24h' }
         );
 
@@ -65,7 +67,7 @@ router.get('/me', async (req, res) => {
     }
 
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(token, JWT_SECRET);
         const [users] = await pool.execute(
             'SELECT id, name, email, role FROM users WHERE id = ?',
             [decoded.id]
@@ -77,7 +79,44 @@ router.get('/me', async (req, res) => {
 
         res.json({ success: true, data: users[0] });
     } catch (error) {
-        res.status(401).json({ success: false, message: 'Invalid token' });
+        console.error('Token verification error:', error.message);
+        res.status(401).json({ success: false, message: 'Invalid or expired token' });
+    }
+});
+
+// Logout (client-side token removal, but endpoint confirms logout)
+router.post('/logout', authenticateToken, async (req, res) => {
+    // In a production app, you might want to blacklist the token
+    // For now, just acknowledge the logout
+    res.json({ success: true, message: 'Logged out successfully' });
+});
+
+// Re-login with new token (refresh token endpoint)
+router.post('/refresh', authenticateToken, async (req, res) => {
+    try {
+        const [users] = await pool.execute(
+            'SELECT id, name, email, role FROM users WHERE id = ?',
+            [req.user.id]
+        );
+
+        if (users.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const user = users[0];
+        const token = jwt.sign(
+            { id: user.id, email: user.email, role: user.role, name: user.name },
+            JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        res.json({
+            success: true,
+            data: { token }
+        });
+    } catch (error) {
+        console.error('Token refresh error:', error);
+        res.status(500).json({ success: false, message: 'Token refresh failed' });
     }
 });
 

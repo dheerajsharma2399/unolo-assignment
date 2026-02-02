@@ -6,20 +6,40 @@ import CheckIn from './pages/CheckIn';
 import History from './pages/History';
 import Summary from './pages/Summary';
 import Layout from './components/Layout';
+import api from './utils/api';
 
 function App() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check for existing token on mount
-        const token = localStorage.getItem('token');
-        const userData = localStorage.getItem('user');
-        
-        if (token && userData) {
-            setUser(JSON.parse(userData));
-        }
-        setLoading(false);
+        // Validate token and get user profile on mount
+        const validateSession = async () => {
+            const token = localStorage.getItem('token');
+            const userData = localStorage.getItem('user');
+            
+            if (token && userData) {
+                try {
+                    // Verify token with backend
+                    const response = await api.get('/auth/me');
+                    if (response.data.success) {
+                        setUser(response.data.data);
+                    } else {
+                        // Token invalid - clear storage
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                    }
+                } catch (err) {
+                    // Token invalid or expired - clear storage
+                    console.error('Session validation failed:', err);
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                }
+            }
+            setLoading(false);
+        };
+
+        validateSession();
     }, []);
 
     const handleLogin = (userData, token) => {
@@ -28,7 +48,12 @@ function App() {
         setUser(userData);
     };
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        try {
+            await api.post('/auth/logout');
+        } catch (err) {
+            // Ignore logout endpoint errors - still clear local state
+        }
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         setUser(null);

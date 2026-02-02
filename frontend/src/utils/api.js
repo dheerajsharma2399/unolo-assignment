@@ -19,8 +19,32 @@ api.interceptors.request.use((config) => {
 // Handle auth errors
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
-        if (error.response?.status === 401 || error.response?.status === 403) {
+    async (error) => {
+        const originalRequest = error.config;
+        
+        // If 401 error and not already retrying
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+            
+            try {
+                // Try to refresh token
+                const response = await api.post('/auth/refresh');
+                if (response.data.success) {
+                    const newToken = response.data.data.token;
+                    localStorage.setItem('token', newToken);
+                    originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                    return api(originalRequest);
+                }
+            } catch (refreshError) {
+                // Refresh failed, proceed to logout
+            }
+            
+            // Clear storage and redirect to login
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        } else if (error.response?.status === 403) {
+            // Token invalid or expired
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = '/login';

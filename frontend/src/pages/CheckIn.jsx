@@ -121,6 +121,12 @@ function CheckIn({ user }) {
         setSuccess('');
         setSubmitting(true);
 
+        if (!navigator.geolocation) {
+            setError('Geolocation is not supported by your browser');
+            setSubmitting(false);
+            return;
+        }
+
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 try {
@@ -146,8 +152,18 @@ function CheckIn({ user }) {
                 }
             },
             (err) => {
-                setError('Failed to retrieve location for check-in.');
+                console.error('Check-in location error:', err);
+                let msg = 'Failed to retrieve location for check-in.';
+                if (err.code === 1) msg = 'Location permission denied. Please allow location access.';
+                else if (err.code === 2) msg = 'Position unavailable. Check GPS/Network.';
+                else if (err.code === 3) msg = 'Location request timed out.';
+                setError(msg);
                 setSubmitting(false);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000, // 10 second timeout to prevent "stuck" UI
+                maximumAge: 0
             }
         );
     };

@@ -12,6 +12,7 @@ const authenticateToken = (req, res, next) => {
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) {
+            console.error('Token verification failed:', err.message);
             return res.status(403).json({ success: false, message: 'Invalid or expired token' });
         }
         req.user = user;
@@ -26,4 +27,4 @@ const requireManager = (req, res, next) => {
     next();
 };
 
-module.exports = { authenticateToken, requireManager };
+module.exports = { authenticateToken, requireManager, JWT_SECRET };

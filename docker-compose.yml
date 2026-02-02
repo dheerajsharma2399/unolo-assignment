@@ -1,7 +1,6 @@
 services:
   backend:
     build: ./backend
-    container_name: unolo_backend
     ports:
       - "9007:9007"
     volumes:
@@ -18,7 +17,6 @@ services:
 
   frontend:
     build: ./frontend
-    container_name: unolo_frontend
     ports:
       - "9006:9006"
     depends_on:
