@@ -5,15 +5,15 @@ services:
     build: ./backend
     container_name: unolo_backend
     ports:
-      - "3001:3001"
+      - "9007:9007"
     volumes:
       - /home/ubuntu/unolo:/app/data
     environment:
-      - PORT=3001
+      - PORT=9007
       - JWT_SECRET=development_secret_key_v2
     restart: always
     healthcheck:
-      test: ["CMD-SHELL", "node -e \"require('net').connect(3001).on('connect', ()=>process.exit(0)).on('error', ()=>process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"require('net').connect(9007).on('connect', ()=>process.exit(0)).on('error', ()=>process.exit(1))\""]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -22,7 +22,7 @@ services:
     build: ./frontend
     container_name: unolo_frontend
     ports:
-      - "9006:80"
+      - "9006:9006"
     depends_on:
       backend:
         condition: service_healthy
