@@ -18,19 +18,19 @@ INSERT INTO clients (name, address, latitude, longitude) VALUES
 
 -- Assign employees to clients
 INSERT INTO employee_clients (employee_id, client_id, assigned_date) VALUES
-(2, 1, '2024-01-01'),
-(2, 2, '2024-01-01'),
-(2, 3, '2024-01-15'),
-(3, 2, '2024-01-01'),
-(3, 4, '2024-01-01'),
-(4, 1, '2024-01-10'),
-(4, 5, '2024-01-10');
+(2, 1, '2026-01-01'),
+(2, 2, '2026-01-01'),
+(2, 3, '2026-01-15'),
+(3, 2, '2026-01-01'),
+(3, 4, '2026-01-01'),
+(4, 1, '2026-01-10'),
+(4, 5, '2026-01-10');
 
 -- Insert some sample checkins
 INSERT INTO checkins (employee_id, client_id, checkin_time, checkout_time, latitude, longitude, notes, status) VALUES
-(2, 1, '2024-01-15 09:15:00', '2024-01-15 11:30:00', '28.4946', '77.0887', 'Regular visit', 'checked_out'),
-(2, 2, '2024-01-15 12:00:00', '2024-01-15 14:00:00', '28.4595', '77.0266', 'Product demo', 'checked_out'),
-(2, 3, '2024-01-15 15:00:00', '2024-01-15 17:30:00', '28.4947', '77.0952', 'Follow up meeting', 'checked_out'),
-(3, 2, '2024-01-15 09:30:00', '2024-01-15 12:00:00', '28.4595', '77.0266', 'Contract discussion', 'checked_out'),
-(3, 4, '2024-01-15 13:00:00', '2024-01-15 16:00:00', '28.5011', '77.0838', 'New requirements', 'checked_out'),
-(2, 1, '2024-01-16 09:00:00', NULL, '28.4950', '77.0890', 'Morning visit', 'checked_in');
+(2, 1, '2026-01-15 09:15:00', '2026-01-15 11:30:00', '28.4946', '77.0887', 'Regular visit', 'checked_out'),
+(2, 2, '2026-01-15 12:00:00', '2026-01-15 14:00:00', '28.4595', '77.0266', 'Product demo', 'checked_out'),
+(2, 3, '2026-01-15 15:00:00', '2026-01-15 17:30:00', '28.4947', '77.0952', 'Follow up meeting', 'checked_out'),
+(3, 2, '2026-01-15 09:30:00', '2026-01-15 12:00:00', '28.4595', '77.0266', 'Contract discussion', 'checked_out'),
+(3, 4, '2026-01-15 13:00:00', '2026-01-15 16:35:48', '28.5399', '77.3489', 'New requirements update on time tracking system.', 'checked_out'),
+(2, 1, '2026-01-16 9:38:48 AM EST ', NULL, NULL, NULL, NULL, NULL);

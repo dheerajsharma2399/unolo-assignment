@@ -121,13 +121,13 @@ const insertAssignment = db.prepare(`
     INSERT INTO employee_clients (employee_id, client_id, assigned_date) VALUES (?, ?, ?)
 `);
 
-insertAssignment.run(2, 1, '2024-01-01');
-insertAssignment.run(2, 2, '2024-01-01');
-insertAssignment.run(2, 3, '2024-01-15');
-insertAssignment.run(3, 2, '2024-01-01');
-insertAssignment.run(3, 4, '2024-01-01');
-insertAssignment.run(4, 1, '2024-01-10');
-insertAssignment.run(4, 5, '2024-01-10');
+insertAssignment.run(2, 1, '2026-01-01');
+insertAssignment.run(2, 2, '2026-01-01');
+insertAssignment.run(2, 3, '2026-01-15');
+insertAssignment.run(3, 2, '2026-01-01');
+insertAssignment.run(3, 4, '2026-01-01');
+insertAssignment.run(4, 1, '2026-01-10');
+insertAssignment.run(4, 5, '2026-01-10');
 
 console.log('Assignments created');
 
@@ -137,12 +137,12 @@ const insertCheckin = db.prepare(`
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
-insertCheckin.run(2, 1, '2024-01-15 09:15:00', '2024-01-15 11:30:00', 28.4946, 77.0887, 'Regular visit', 'checked_out');
-insertCheckin.run(2, 2, '2024-01-15 12:00:00', '2024-01-15 14:00:00', 28.4595, 77.0266, 'Product demo', 'checked_out');
-insertCheckin.run(2, 3, '2024-01-15 15:00:00', '2024-01-15 17:30:00', 28.4947, 77.0952, 'Follow up meeting', 'checked_out');
-insertCheckin.run(3, 2, '2024-01-15 09:30:00', '2024-01-15 12:00:00', 28.4595, 77.0266, 'Contract discussion', 'checked_out');
-insertCheckin.run(3, 4, '2024-01-15 13:00:00', '2024-01-15 16:00:00', 28.5011, 77.0838, 'New requirements', 'checked_out');
-insertCheckin.run(2, 1, '2024-01-16 09:00:00', null, 28.4950, 77.0890, 'Morning visit', 'checked_in');
+insertCheckin.run(2, 1, '2026-01-15 09:15:00', '2026-01-15 11:30:00', 28.4946, 77.0887, 'Regular visit', 'checked_out');
+insertCheckin.run(2, 2, '2026-01-15 12:00:00', '2026-01-15 14:00:00', 28.4595, 77.0266, 'Product demo', 'checked_out');
+insertCheckin.run(2, 3, '2026-01-15 15:00:00', '2026-01-15 17:30:00', 28.4947, 77.0952, 'Follow up meeting', 'checked_out');
+insertCheckin.run(3, 2, '2026-01-15 09:30:00', '2026-01-15 12:00:00', 28.4595, 77.0266, 'Contract discussion', 'checked_out');
+insertCheckin.run(3, 4, '2026-01-15 13:00:00', '2026-01-15 16:00:00', 28.5011, 77.0838, 'New requirements', 'checked_out');
+insertCheckin.run(2, 1, '2026-01-16 09:00:00', null, 28.4950, 77.0890, 'Morning visit', 'checked_in');
 
 console.log('Sample checkins created');
 
