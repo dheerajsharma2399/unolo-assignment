@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Force remove containers by name to prevent conflicts across project names
+docker rm -f unolo_backend unolo_frontend || true
+
 # 1. Stop and remove any existing containers, networks, and volumes defined in the compose file.
 # This prevents the "container name already in use" error.
 docker compose down
