@@ -4,13 +4,13 @@
 **Question:** If this app had 10,000 employees checking in simultaneously, what would break first? How would you fix it?
 
 **Answer:**
-The first breaking point would be the sqlite db. SQLite is a file based database that allows only one write operation at a time. 10,000 concurrent write requests would result in: man
+The first breaking point would be the sqlite db. SQLite is a file based database that allows only one write operation at a time. 10,000 concurrent write requests would result in: many erros such as
 - `SQLITE_BUSY` errors as processes fight for the write lock.
 - High latency and request timeouts.
 - Potential data loss if the server crashes under load.
 
 **Fix:**
-1. **Database Migration:** Migrate from SQLite to a robust client-server RDBMS like **PostgreSQL** or **MySQL**. These support row-level locking and high concurrency.
+1. **Database Migration:** Migrate from SQLite to peeoper RDBMS like **PostgreSQL** or **MySQL**. These support row-level locking and high concurrency.
 2. **Connection Pooling:** Implement a connection pool to manage database connections efficiently, preventing the overhead of opening/closing connections for every request.
 3. **Load Balancing:** Run multiple instances of the Node.js backend behind a load balancer to distribute traffic.
 4. **Asynchronous Processing:** Use a message queue (like RabbitMQ or AWS SQS) to decouple the API from the database. The API accepts the check-in, pushes it to a queue, and a worker process handles the database write.
