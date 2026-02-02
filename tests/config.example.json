@@ -1,0 +1,20 @@
+{
+    "baseUrl": "http://localhost:9007",
+    "timeout": 10000,
+    "retries": 2,
+    "verbose": true,
+    "testUsers": {
+        "manager": {
+            "email": "manager@unolo.com",
+            "password": "password123"
+        },
+        "employee": {
+            "email": "rahul@unolo.com",
+            "password": "password123"
+        },
+        "employee2": {
+            "email": "priya@unolo.com",
+            "password": "password123"
+        }
+    }
+}

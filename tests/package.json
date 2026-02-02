@@ -1,0 +1,17 @@
+{
+  "name": "unolo-tracker-tests",
+  "version": "1.0.0",
+  "description": "Enterprise-grade integration tests for Field Force Tracker",
+  "main": "run-tests.js",
+  "type": "module",
+  "scripts": {
+    "test": "node run-tests.js",
+    "test:remote": "node run-tests.js --url=https://dmm.mooh.me",
+    "test:local": "node run-tests.js --url=http://localhost:9007",
+    "test:ip": "node run-tests.js --url=http://152.67.7.111:9007"
+  },
+  "keywords": ["integration-tests", "api-tests", "field-tracker"],
+  "author": "Unolo",
+  "license": "MIT",
+  "dependencies": {}
+}
