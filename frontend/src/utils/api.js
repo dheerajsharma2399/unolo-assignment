@@ -22,6 +22,11 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
         
+        // Skip refresh for auth endpoints to prevent infinite loop
+        if (originalRequest.url.includes('/auth/')) {
+            return Promise.reject(error);
+        }
+        
         // If 401 error and not already retrying
         if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true;
@@ -36,18 +41,24 @@ api.interceptors.response.use(
                     return api(originalRequest);
                 }
             } catch (refreshError) {
-                // Refresh failed, proceed to logout
+                // Refresh failed - will redirect to login below
             }
             
             // Clear storage and redirect to login
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '/login';
+            
+            // Only redirect if not already on login page
+            if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login';
+            }
         } else if (error.response?.status === 403) {
             // Token invalid or expired
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            window.location.href = '/login';
+            if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(error);
     }
