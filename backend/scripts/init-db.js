@@ -1,11 +1,27 @@
 const Database = require('better-sqlite3');
-const bcrypt = require('bcrypt');
 const path = require('path');
+const fs = require('fs');
+
+let bcrypt;
+try {
+    bcrypt = require('bcrypt');
+} catch (err) {
+    try {
+        bcrypt = require('bcryptjs');
+    } catch (err2) {
+        console.error('Error: Could not load bcrypt or bcryptjs. Make sure dependencies are installed.');
+        process.exit(1);
+    }
+}
 
 const dbPath = path.join(__dirname, '..', 'data', 'database.sqlite');
+const dataDir = path.dirname(dbPath);
 
 // Delete existing database to start fresh
-const fs = require('fs');
+if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+}
+
 if (fs.existsSync(dbPath)) {
     fs.unlinkSync(dbPath);
     console.log('Deleted existing database');
