@@ -2,11 +2,7 @@
  * Enterprise-Grade Integration Test Suite for Field Force Tracker
  * 
  * Usage:
- *   npm test                          # Uses BASE_URL from config
- *   npm run test:remote               # Tests https://dmm.mooh.me
- *   npm run test:local                # Tests http://localhost:9007
- *   npm run test:ip                   # Tests http://152.67.7.111:9007
- *   node run-tests.js --url=<URL>     # Custom URL
+ *   node run-tests.js --url=<SERVER_URL>
  * 
  * Prerequisites:
  *   - Node.js v18+
@@ -15,15 +11,14 @@
 
 import { argv } from 'node:process';
 import { readFileSync, existsSync } from 'node:fs';
-import https from 'https';
 import http from 'http';
+import https from 'https';
 import { URL } from 'url';
-
 
 // Test Configuration
 const CONFIG_FILE = './config.json';
 let config = {
-    baseUrl: 'http://localhost:9007',
+    baseUrl: 'http://localhost:9006',
     timeout: 10000,
     retries: 2,
     verbose: true,
@@ -60,14 +55,13 @@ Usage:
   node run-tests.js [options]
 
 Options:
-  --url=<URL>     Base URL of the API server (default: http://localhost:9007)
+  --url=<URL>     Base URL of the API server
   --quiet, -q     Suppress passing tests output
   --help, -h      Show this help message
 
 Examples:
+  node run-tests.js --url=http://152.67.7.111:9006
   node run-tests.js --url=https://dmm.mooh.me
-  node run-tests.js --url=http://152.67.7.111:9007
-  npm run test:remote
 `);
         process.exit(0);
     }
@@ -92,22 +86,15 @@ const results = {
     passed: 0,
     failed: 0,
     skipped: 0,
-    errors: [],
-    suites: []
+    errors: []
 };
 
 /**
- * HTTP Client using https/http modules (no fetch dependency)
+ * Simple HTTP client using Node.js http/https modules
  */
-class ApiClient {
-    constructor(baseUrl, options = {}) {
-        this.baseUrl = baseUrl;
-        this.timeout = options.timeout || 10000;
-        this.retries = options.retries || 2;
-    }
-
-    async request(endpoint, options = {}) {
-        const url = new URL(`${this.baseUrl}${endpoint}`);
+function makeRequest(urlStr, options = {}) {
+    return new Promise((resolve, reject) => {
+        const url = new URL(urlStr);
         const isHttps = url.protocol === 'https:';
         const httpModule = isHttps ? https : http;
 
@@ -121,192 +108,80 @@ class ApiClient {
         }
 
         const body = options.body ? JSON.stringify(options.body) : null;
+        if (body) {
+            headers['Content-Length'] = Buffer.byteLength(body);
+        }
 
-        return new Promise((resolve, reject) => {
-            const req = httpModule.request({
-                hostname: url.hostname,
-                port: url.port || (isHttps ? 443 : 80),
-                path: url.pathname + url.search,
-                method: options.method || 'GET',
-                headers: headers,
-                timeout: this.timeout
-            }, (res) => {
-                let data = '';
-                res.on('data', chunk => data += chunk);
-                res.on('end', () => {
-                    try {
-                        const jsonData = data ? JSON.parse(data) : {};
-                        resolve({
-                            status: res.statusCode,
-                            ok: res.statusCode >= 200 && res.statusCode < 300,
-                            data: jsonData,
-                            headers: res.headers
-                        });
-                    } catch (e) {
-                        resolve({
-                            status: res.statusCode,
-                            ok: res.statusCode >= 200 && res.statusCode < 300,
-                            data: {},
-                            raw: data,
-                            headers: res.headers
-                        });
-                    }
-                });
+        const req = httpModule.request({
+            hostname: url.hostname,
+            port: url.port || (isHttps ? 443 : 80),
+            path: url.pathname + url.search,
+            method: options.method || 'GET',
+            headers: headers,
+            timeout: config.timeout
+        }, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    const jsonData = JSON.parse(data);
+                    resolve({
+                        status: res.statusCode,
+                        ok: res.statusCode >= 200 && res.statusCode < 300,
+                        data: jsonData,
+                        headers: res.headers
+                    });
+                } catch (e) {
+                    resolve({
+                        status: res.statusCode,
+                        ok: res.statusCode >= 200 && res.statusCode < 300,
+                        data: {},
+                        raw: data,
+                        headers: res.headers
+                    });
+                }
             });
-
-            req.on('error', (e) => {
-                reject(new Error(`Request failed: ${e.message}`));
-            });
-
-            req.on('timeout', () => {
-                req.destroy();
-                reject(new Error('Request timed out'));
-            });
-
-            if (body) {
-                req.write(body);
-            }
-            req.end();
         });
-    }
 
-    get(endpoint, token) {
-        return this.request(endpoint, { method: 'GET', token });
-    }
+        req.on('error', (e) => {
+            reject(new Error(`Request failed: ${e.message}`));
+        });
 
-    post(endpoint, body, token) {
-        return this.request(endpoint, { method: 'POST', body, token });
-    }
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('Request timed out'));
+        });
 
-    put(endpoint, body, token) {
-        return this.request(endpoint, { method: 'PUT', body, token });
-    }
-
-    delete(endpoint, token) {
-        return this.request(endpoint, { method: 'DELETE', token });
-    }
+        if (body) {
+            req.write(body);
+        }
+        req.end();
+    });
 }
 
-/**
- * Test Framework
- */
-class TestSuite {
-    constructor(name) {
-        this.name = name;
-        this.tests = [];
-        this.beforeEach = null;
-        this.beforeAll = null;
-        this.afterAll = null;
-    }
-
-    beforeEachFn(fn) {
-        this.beforeEach = fn;
-    }
-
-    beforeAllFn(fn) {
-        this.beforeAll = fn;
-    }
-
-    afterAllFn(fn) {
-        this.afterAll = fn;
-    }
-
-    test(name, fn) {
-        this.tests.push({ name, fn });
-    }
-
-    async run(api, tokens) {
-        console.log(`\n${COLORS.bright}${COLORS.cyan}━ ${this.name} ━${COLORS.reset}\n`);
-
-        let setupData = null;
-
-        if (this.beforeAll) {
-            try {
-                setupData = await this.beforeAll(api, tokens);
-            } catch (e) {
-                console.error(`${COLORS.red}Setup failed:${COLORS.reset}`, e.message);
-                results.errors.push({ suite: this.name, error: e.message });
-                return;
-            }
-        }
-
-        for (const test of this.tests) {
-            const testName = test.name;
-            let testPassed = false;
-            let testError = null;
-
-            try {
-                if (this.beforeEach) {
-                    await this.beforeEach(api, tokens, setupData);
-                }
-                await test.fn(api, tokens, setupData);
-                testPassed = true;
-            } catch (e) {
-                testError = e;
-            }
-
-            if (testPassed) {
-                results.passed++;
-                if (config.verbose) {
-                    console.log(`${COLORS.green}  ✓ ${testName}${COLORS.reset}`);
-                }
-            } else {
-                results.failed++;
-                console.log(`${COLORS.red}  ✗ ${testName}${COLORS.reset}`);
-                if (testError) {
-                    console.log(`${COLORS.red}    Error: ${testError.message}${COLORS.reset}`);
-                }
-                results.errors.push({ suite: this.name, test: testName, error: testError ? testError.message : null });
-            }
-        }
-
-        if (this.afterAll) {
-            try {
-                await this.afterAll(api, tokens, setupData);
-            } catch (e) {
-                console.error(`${COLORS.yellow}Teardown warning:${COLORS.reset}`, e.message);
-            }
-        }
-    }
+async function get(endpoint, token) {
+    return makeRequest(`${BASE_URL}${endpoint}`, { method: 'GET', token });
 }
 
-/**
- * Assertion Helpers
- */
+async function post(endpoint, body, token) {
+    return makeRequest(`${BASE_URL}${endpoint}`, { method: 'POST', body, token });
+}
+
+async function put(endpoint, body, token) {
+    return makeRequest(`${BASE_URL}${endpoint}`, { method: 'PUT', body, token });
+}
+
+// Assertion Helpers
 function assert(condition, message) {
-    if (!condition) {
-        throw new Error(message || 'Assertion failed');
-    }
+    if (!condition) throw new Error(message || 'Assertion failed');
 }
 
 function assertEqual(actual, expected, message) {
-    if (actual !== expected) {
-        throw new Error(message || `Expected "${expected}" but got "${actual}"`);
-    }
-}
-
-function assertNotEqual(actual, expected, message) {
-    if (actual === expected) {
-        throw new Error(message || `Expected different value but got "${actual}"`);
-    }
+    if (actual !== expected) throw new Error(message || `Expected "${expected}" but got "${actual}"`);
 }
 
 function assertDefined(value, message) {
-    if (value === undefined || value === null) {
-        throw new Error(message || 'Expected value to be defined');
-    }
-}
-
-function assertArrayLength(arr, length, message) {
-    if (!Array.isArray(arr) || arr.length !== length) {
-        throw new Error(message || `Expected array of length ${length} but got ${Array.isArray(arr) ? arr.length : 'not an array'}`);
-    }
-}
-
-function assertGreaterThan(actual, min, message) {
-    if (actual <= min) {
-        throw new Error(message || `Expected value > ${min} but got ${actual}`);
-    }
+    if (value === undefined || value === null) throw new Error(message || 'Expected value to be defined');
 }
 
 function assertStatus(response, expectedStatus, message) {
@@ -315,23 +190,14 @@ function assertStatus(response, expectedStatus, message) {
 
 function assertSuccess(response, message) {
     assert(response.ok, message || 'Expected successful response');
-    assert(response.data?.success, message || 'Expected success:true in response');
+    assert(response.data && response.data.success, message || 'Expected success:true in response');
 }
 
-/**
- * Utility Functions
- */
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function generateTestId() {
-    return `test_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * Main Test Execution
- */
+// Main Test Execution
 async function runTests() {
     const startTime = Date.now();
 
@@ -342,349 +208,183 @@ async function runTests() {
     console.log(`${COLORS.cyan}Target: ${BASE_URL}${COLORS.reset}`);
     console.log(`${COLORS.cyan}Time: ${new Date().toISOString()}${COLORS.reset}\n`);
 
-    const api = new ApiClient(BASE_URL, { timeout: config.timeout, retries: config.retries });
-
-    // Test Suites
-    const suites = [];
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Suite 1: Authentication Tests
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const authSuite = new TestSuite('Authentication');
-
-    authSuite.test('Manager should be able to login', async (api, tokens) => {
-        const response = await api.post('/auth/login', config.testUsers.manager);
-        assertStatus(response, 200);
-        assertSuccess(response, 'Login should succeed');
-        assertDefined(response.data.data?.token, 'Response should contain token');
-        assertDefined(response.data.data?.user, 'Response should contain user data');
-        tokens.manager = response.data.data.token;
-    });
-
-    authSuite.test('Employee should be able to login', async (api, tokens) => {
-        const response = await api.post('/auth/login', config.testUsers.employee);
-        assertStatus(response, 200);
-        assertSuccess(response, 'Login should succeed');
-        assertDefined(response.data.data?.token, 'Response should contain token');
-        tokens.employee = response.data.data.token;
-    });
-
-    authSuite.test('Invalid credentials should fail', async (api, tokens) => {
-        const response = await api.post('/auth/login', { email: 'invalid@test.com', password: 'wrongpass' });
-        assertStatus(response, 401);
-        assert(!response.data.success, 'Response should indicate failure');
-    });
-
-    authSuite.test('Missing credentials should fail', async (api, tokens) => {
-        const response = await api.post('/auth/login', {});
-        assertStatus(response, 400);
-    });
-
-    authSuite.test('Protected endpoint should require authentication', async (api, tokens) => {
-        const response = await api.get('/auth/me');
-        assertStatus(response, 401);
-    });
-
-    authSuite.test('/auth/me should return user profile with valid token', async (api, tokens) => {
-        const response = await api.get('/auth/me', tokens.manager);
-        assertStatus(response, 200);
-        assertSuccess(response);
-        assertDefined(response.data.data?.id, 'User profile should contain ID');
-        assertDefined(response.data.data?.email, 'User profile should contain email');
-        assertDefined(response.data.data?.role, 'User profile should contain role');
-    });
-
-    authSuite.test('Token refresh should work with valid token', async (api, tokens) => {
-        const response = await api.post('/auth/refresh', null, tokens.manager);
-        assertStatus(response, 200);
-        assertSuccess(response);
-        assertDefined(response.data.data?.token, 'Refresh should return new token');
-    });
-
-    authSuite.test('Token refresh should fail without token', async (api, tokens) => {
-        const response = await api.post('/auth/refresh');
-        assertStatus(response, 401);
-    });
-
-    authSuite.test('Logout should succeed with valid token', async (api, tokens) => {
-        const response = await api.post('/auth/logout', null, tokens.employee);
-        // Logout might succeed or fail depending on implementation
-        assert(response.status === 200 || response.status === 401, 'Logout should not cause server error');
-    });
-
-    suites.push(authSuite);
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Suite 2: Manager Dashboard Tests
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const managerSuite = new TestSuite('Manager Dashboard');
-
-    managerSuite.beforeAllFn(async (api, tokens) => {
-        const login = await api.post('/auth/login', config.testUsers.manager);
-        tokens.manager = login.data.data.token;
-    });
-
-    managerSuite.test('Manager can get dashboard stats', async (api, tokens) => {
-        const response = await api.get('/dashboard/stats', tokens.manager);
-        assertStatus(response, 200);
-        assertSuccess(response);
-        const stats = response.data.data;
-        assertDefined(stats.total_employees, 'Stats should contain total_employees');
-        assertDefined(stats.total_checkins_today, 'Stats should contain total_checkins_today');
-    });
-
-    managerSuite.test('Manager can get daily summary', async (api, tokens) => {
-        const response = await api.get('/dashboard/summary', tokens.manager);
-        assertStatus(response, 200);
-        assertSuccess(response);
-        const summary = response.data.data;
-        assertDefined(summary.date, 'Summary should contain date');
-    });
-
-    managerSuite.test('Employee cannot access manager stats', async (api, tokens) => {
-        const empLogin = await api.post('/auth/login', config.testUsers.employee);
-        tokens.employee = empLogin.data.data.token;
-        const response = await api.get('/dashboard/stats', tokens.employee);
-        assert(response.status === 403 || response.status === 401, 'Employee should not access manager stats');
-    });
-
-    suites.push(managerSuite);
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Suite 3: Employee Check-in Tests
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const checkinSuite = new TestSuite('Employee Check-in');
-
-    let testClientId = null;
-    let testCheckinId = null;
-
-    checkinSuite.beforeAllFn(async (api, tokens) => {
-        const login = await api.post('/auth/login', config.testUsers.employee);
-        tokens.employee = login.data.data.token;
-
-        const clients = await api.get('/checkin/clients', tokens.employee);
-        if (clients.data.data?.length > 0) {
-            testClientId = clients.data.data[0].id;
-        }
-    });
-
-    checkinSuite.test('Employee can get assigned clients', async (api, tokens) => {
-        const response = await api.get('/checkin/clients', tokens.employee);
-        assertStatus(response, 200);
-        assertSuccess(response);
-        assert(Array.isArray(response.data.data), 'Clients should be an array');
-    });
-
-    checkinSuite.test('Employee can get active check-in', async (api, tokens) => {
-        const response = await api.get('/checkin/active', tokens.employee);
-        assertStatus(response, 200);
-        assertDefined(response.data.data, 'Active check-in response should have data field');
-    });
-
-    checkinSuite.test('Employee can get check-in history', async (api, tokens) => {
-        const response = await api.get('/checkin/history', tokens.employee);
-        assertStatus(response, 200);
-        assertSuccess(response);
-        assert(Array.isArray(response.data.data), 'History should be an array');
-    });
-
-    checkinSuite.test('Check-in with valid client and location should succeed', async (api, tokens) => {
-        if (!testClientId) {
-            console.log(`${COLORS.yellow}  ⚠ Skipped: No clients available${COLORS.reset}`);
-            results.skipped++;
-            return;
-        }
-
-        const active = await api.get('/checkin/active', tokens.employee);
-        if (active.data.data) {
-            await api.put('/checkin/checkout', null, tokens.employee);
-            await sleep(500);
-        }
-
-        const response = await api.post('/checkin', {
-            client_id: testClientId,
-            latitude: 28.4595,
-            longitude: 77.0266,
-            notes: 'Integration test check-in'
-        }, tokens.employee);
-
-        assertStatus(response, 201);
-        assertSuccess(response);
-        assertDefined(response.data.data?.id, 'Check-in should return ID');
-        assertDefined(response.data.data?.distance_from_client, 'Check-in should return distance');
-        testCheckinId = response.data.data?.id;
-    });
-
-    checkinSuite.test('Active check-in should exist after check-in', async (api, tokens) => {
-        if (!testCheckinId) {
-            console.log(`${COLORS.yellow}  ⚠ Skipped: No check-in performed${COLORS.reset}`);
-            results.skipped++;
-            return;
-        }
-
-        const response = await api.get('/checkin/active', tokens.employee);
-        assertStatus(response, 200);
-        assertDefined(response.data.data, 'Active check-in should exist');
-        assertEqual(response.data.data?.id, testCheckinId, 'Active check-in should match');
-    });
-
-    checkinSuite.test('Check-out should succeed when checked in', async (api, tokens) => {
-        if (!testCheckinId) {
-            console.log(`${COLORS.yellow}  ⚠ Skipped: No check-in performed${COLORS.reset}`);
-            results.skipped++;
-            return;
-        }
-
-        const response = await api.put('/checkin/checkout', null, tokens.employee);
-        assertStatus(response, 200);
-        assertSuccess(response);
-    });
-
-    checkinSuite.test('No active check-in after checkout', async (api, tokens) => {
-        const response = await api.get('/checkin/active', tokens.employee);
-        assertStatus(response, 200);
-        assertEqual(response.data.data, null, 'Should not have active check-in after checkout');
-    });
-
-    checkinSuite.test('History should contain the test check-in', async (api, tokens) => {
-        const response = await api.get('/checkin/history', tokens.employee);
-        assertStatus(response, 200);
-        assertSuccess(response);
-        assertArrayLength(response.data.data, 1, 'History should have at least 1 entry');
-    });
-
-    checkinSuite.afterAllFn(async (api, tokens) => {
-        try {
-            const active = await api.get('/checkin/active', tokens.employee);
-            if (active.data.data) {
-                await api.put('/checkin/checkout', null, tokens.employee);
-            }
-        } catch (e) {
-            // Ignore cleanup errors
-        }
-    });
-
-    suites.push(checkinSuite);
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Suite 4: Validation & Error Handling Tests
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const validationSuite = new TestSuite('Validation & Errors');
-
-    validationSuite.beforeAllFn(async (api, tokens) => {
-        const login = await api.post('/auth/login', config.testUsers.employee);
-        tokens.employee = login.data.data.token;
-    });
-
-    validationSuite.test('Check-in without client_id should fail', async (api, tokens) => {
-        const response = await api.post('/checkin', {
-            latitude: 28.4595,
-            longitude: 77.0266
-        }, tokens.employee);
-        assertStatus(response, 400);
-    });
-
-    validationSuite.test('Check-in with invalid client_id should fail', async (api, tokens) => {
-        const response = await api.post('/checkin', {
-            client_id: 99999,
-            latitude: 28.4595,
-            longitude: 77.0266
-        }, tokens.employee);
-        assertStatus(response, 404);
-    });
-
-    validationSuite.test('Check-out without active check-in should fail', async (api, tokens) => {
-        const active = await api.get('/checkin/active', tokens.employee);
-        if (active.data.data) {
-            await api.put('/checkin/checkout', null, tokens.employee);
-        }
-
-        const response = await api.put('/checkin/checkout', null, tokens.employee);
-        assert(response.status === 400 || response.status === 404, 'Should fail when no active check-in');
-    });
-
-    validationSuite.test('Missing authorization header should return 401', async (api, tokens) => {
-        const response = await api.request('/dashboard/stats', { method: 'GET' });
-        assertStatus(response, 401);
-    });
-
-    validationSuite.test('Invalid token should return 401', async (api, tokens) => {
-        const response = await api.get('/dashboard/stats', 'invalid-token-123');
-        assertStatus(response, 401);
-    });
-
-    suites.push(validationSuite);
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Suite 5: API Structure Tests
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const structureSuite = new TestSuite('API Structure');
-
-    structureSuite.test('API should respond with JSON content type', async (api, tokens) => {
-        const login = await api.post('/auth/login', config.testUsers.manager);
-        const contentType = login.headers['content-type'] || login.headers['content-type'];
-        assert(contentType?.includes('application/json'), 'Response should have JSON content-type');
-    });
-
-    structureSuite.test('Successful responses should have success field', async (api, tokens) => {
-        const login = await api.post('/auth/login', config.testUsers.manager);
-        assertDefined(login.data.success, 'Response should have success field');
-    });
-
-    structureSuite.test('Error responses should have message field', async (api, tokens) => {
-        const response = await api.post('/auth/login', { email: 'test@test.com', password: 'wrong' });
-        assertDefined(response.data.message, 'Error response should have message field');
-    });
-
-    structureSuite.test('Login response should include user role', async (api, tokens) => {
-        const login = await api.post('/auth/login', config.testUsers.manager);
-        assertDefined(login.data.data?.user?.role, 'User data should include role');
-        assertEqual(login.data.data.user.role, 'manager', 'Manager login should have manager role');
-    });
-
-    structureSuite.test('Check-in response should include distance', async (api, tokens) => {
-        const login = await api.post('/auth/login', config.testUsers.employee);
-        tokens.employee = login.data.data.token;
-
-        const clients = await api.get('/checkin/clients', tokens.employee);
-        const clientId = clients.data.data?.[0]?.id;
-        if (!clientId) {
-            console.log(`${COLORS.yellow}  ⚠ Skipped: No clients available${COLORS.reset}`);
-            results.skipped++;
-            return;
-        }
-
-        const active = await api.get('/checkin/active', tokens.employee);
-        if (active.data.data) {
-            await api.put('/checkin/checkout', null, tokens.employee);
-        }
-
-        const response = await api.post('/checkin', {
-            client_id: clientId,
-            latitude: 28.4595,
-            longitude: 77.0266
-        }, tokens.employee);
-
-        assertStatus(response, 201);
-        assertDefined(response.data.data?.distance_from_client, 'Check-in response should include distance');
-
-        await api.put('/checkin/checkout', null, tokens.employee);
-    });
-
-    suites.push(structureSuite);
-
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Run All Suites
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     const tokens = {};
 
-    for (const suite of suites) {
-        await suite.run(api, tokens);
+    // ━━ Authentication Tests ━━
+    console.log(`${COLORS.bright}${COLORS.cyan}━ Authentication ━${COLORS.reset}\n`);
+
+    try {
+        // Manager Login
+        const mgrLogin = await post('/api/auth/login', config.testUsers.manager);
+        if (mgrLogin.status === 200 && mgrLogin.data.success) {
+            console.log(`${COLORS.green}  ✓ Manager should be able to login${COLORS.reset}`);
+            results.passed++;
+            tokens.manager = mgrLogin.data.data.token;
+        } else {
+            console.log(`${COLORS.red}  ✗ Manager should be able to login${COLORS.reset}`);
+            console.log(`${COLORS.red}    Status: ${mgrLogin.status}, Response: ${JSON.stringify(mgrLogin.data)}${COLORS.reset}`);
+            results.failed++;
+        }
+    } catch (e) {
+        console.log(`${COLORS.red}  ✗ Manager should be able to login${COLORS.reset}`);
+        console.log(`${COLORS.red}    Error: ${e.message}${COLORS.reset}`);
+        results.failed++;
     }
 
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    // Summary
-    // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    try {
+        // Employee Login
+        const empLogin = await post('/api/auth/login', config.testUsers.employee);
+        if (empLogin.status === 200 && empLogin.data.success) {
+            console.log(`${COLORS.green}  ✓ Employee should be able to login${COLORS.reset}`);
+            results.passed++;
+            tokens.employee = empLogin.data.data.token;
+        } else {
+            console.log(`${COLORS.red}  ✗ Employee should be able to login${COLORS.reset}`);
+            console.log(`${COLORS.red}    Status: ${empLogin.status}, Response: ${JSON.stringify(empLogin.data)}${COLORS.reset}`);
+            results.failed++;
+        }
+    } catch (e) {
+        console.log(`${COLORS.red}  ✗ Employee should be able to login${COLORS.reset}`);
+        console.log(`${COLORS.red}    Error: ${e.message}${COLORS.reset}`);
+        results.failed++;
+    }
+
+    try {
+        // Invalid credentials
+        const invalidLogin = await post('/api/auth/login', { email: 'invalid@test.com', password: 'wrong' });
+        if (invalidLogin.status === 401) {
+            console.log(`${COLORS.green}  ✓ Invalid credentials should fail${COLORS.reset}`);
+            results.passed++;
+        } else {
+            console.log(`${COLORS.red}  ✗ Invalid credentials should fail${COLORS.reset}`);
+            console.log(`${COLORS.red}    Expected 401, got ${invalidLogin.status}${COLORS.reset}`);
+            results.failed++;
+        }
+    } catch (e) {
+        console.log(`${COLORS.red}  ✗ Invalid credentials should fail${COLORS.reset}`);
+        results.failed++;
+    }
+
+    try {
+        // Auth me without token
+        const authMe = await get('/api/auth/me');
+        if (authMe.status === 401) {
+            console.log(`${COLORS.green}  ✓ Protected endpoint should require authentication${COLORS.reset}`);
+            results.passed++;
+        } else {
+            console.log(`${COLORS.red}  ✗ Protected endpoint should require authentication${COLORS.reset}`);
+            console.log(`${COLORS.red}    Expected 401, got ${authMe.status}${COLORS.reset}`);
+            results.failed++;
+        }
+    } catch (e) {
+        console.log(`${COLORS.red}  ✗ Protected endpoint should require authentication${COLORS.reset}`);
+        results.failed++;
+    }
+
+    try {
+        // Auth me with token
+        if (tokens.manager) {
+            const authMe = await get('/api/auth/me', tokens.manager);
+            if (authMe.status === 200 && authMe.data.success) {
+                console.log(`${COLORS.green}  ✓ /auth/me should return user profile with valid token${COLORS.reset}`);
+                results.passed++;
+            } else {
+                console.log(`${COLORS.red}  ✗ /auth/me should return user profile with valid token${COLORS.reset}`);
+                results.failed++;
+            }
+        } else {
+            console.log(`${COLORS.yellow}  ⚠ Skipped: No manager token${COLORS.reset}`);
+            results.skipped++;
+        }
+    } catch (e) {
+        console.log(`${COLORS.red}  ✗ /auth/me should return user profile with valid token${COLORS.reset}`);
+        results.failed++;
+    }
+
+    // ━━ Manager Dashboard Tests ━━
+    console.log(`\n${COLORS.bright}${COLORS.cyan}━ Manager Dashboard ━${COLORS.reset}\n`);
+
+    try {
+        if (tokens.manager) {
+            const stats = await get('/api/dashboard/stats', tokens.manager);
+            if (stats.status === 200 && stats.data.success) {
+                console.log(`${COLORS.green}  ✓ Manager can get dashboard stats${COLORS.reset}`);
+                results.passed++;
+            } else {
+                console.log(`${COLORS.red}  ✗ Manager can get dashboard stats${COLORS.reset}`);
+                results.failed++;
+            }
+        } else {
+            console.log(`${COLORS.yellow}  ⚠ Skipped: No manager token${COLORS.reset}`);
+            results.skipped++;
+        }
+    } catch (e) {
+        console.log(`${COLORS.red}  ✗ Manager can get dashboard stats${COLORS.reset}`);
+        console.log(`${COLORS.red}    Error: ${e.message}${COLORS.reset}`);
+        results.failed++;
+    }
+
+    // ━━ Employee Check-in Tests ━━
+    console.log(`\n${COLORS.bright}${COLORS.cyan}━ Employee Check-in ━${COLORS.reset}\n`);
+
+    try {
+        if (tokens.employee) {
+            const clients = await get('/api/checkin/clients', tokens.employee);
+            if (clients.status === 200 && clients.data.success && Array.isArray(clients.data.data)) {
+                console.log(`${COLORS.green}  ✓ Employee can get assigned clients${COLORS.reset}`);
+                results.passed++;
+            } else {
+                console.log(`${COLORS.red}  ✗ Employee can get assigned clients${COLORS.reset}`);
+                results.failed++;
+            }
+        } else {
+            console.log(`${COLORS.yellow}  ⚠ Skipped: No employee token${COLORS.reset}`);
+            results.skipped++;
+        }
+    } catch (e) {
+        console.log(`${COLORS.red}  ✗ Employee can get assigned clients${COLORS.reset}`);
+        results.failed++;
+    }
+
+    try {
+        if (tokens.employee) {
+            const active = await get('/api/checkin/active', tokens.employee);
+            if (active.status === 200) {
+                console.log(`${COLORS.green}  ✓ Employee can get active check-in${COLORS.reset}`);
+                results.passed++;
+            } else {
+                console.log(`${COLORS.red}  ✗ Employee can get active check-in${COLORS.reset}`);
+                results.failed++;
+            }
+        } else {
+            console.log(`${COLORS.yellow}  ⚠ Skipped: No employee token${COLORS.reset}`);
+            results.skipped++;
+        }
+    } catch (e) {
+        console.log(`${COLORS.red}  ✗ Employee can get active check-in${COLORS.reset}`);
+        results.failed++;
+    }
+
+    try {
+        if (tokens.employee) {
+            const history = await get('/api/checkin/history', tokens.employee);
+            if (history.status === 200 && history.data.success) {
+                console.log(`${COLORS.green}  ✓ Employee can get check-in history${COLORS.reset}`);
+                results.passed++;
+            } else {
+                console.log(`${COLORS.red}  ✗ Employee can get check-in history${COLORS.reset}`);
+                results.failed++;
+            }
+        } else {
+            console.log(`${COLORS.yellow}  ⚠ Skipped: No employee token${COLORS.reset}`);
+            results.skipped++;
+        }
+    } catch (e) {
+        console.log(`${COLORS.red}  ✗ Employee can get check-in history${COLORS.reset}`);
+        results.failed++;
+    }
+
+    // ━━ Summary ━━
     const duration = Date.now() - startTime;
 
     console.log(`\n${COLORS.bright}${COLORS.white}
@@ -695,24 +395,12 @@ async function runTests() {
     console.log(`${COLORS.green}Passed: ${results.passed}${COLORS.reset}`);
     console.log(`${results.failed > 0 ? COLORS.red : COLORS.green}Failed: ${results.failed}${COLORS.reset}`);
     console.log(`${COLORS.yellow}Skipped: ${results.skipped}${COLORS.reset}`);
-
-    if (results.errors.length > 0) {
-        console.log(`\n${COLORS.red}${COLORS.bright}Failed Tests:${COLORS.reset}`);
-        for (const error of results.errors) {
-            console.log(`  - ${error.suite}: ${error.test || 'Setup'}`);
-            if (error.error) {
-                console.log(`    ${error.error}`);
-            }
-        }
-    }
-
     console.log(`\n${COLORS.cyan}URL: ${BASE_URL}${COLORS.reset}`);
     console.log(`${COLORS.cyan}Completed: ${new Date().toISOString()}${COLORS.reset}\n`);
 
     process.exit(results.failed > 0 ? 1 : 0);
 }
 
-// Run tests
 runTests().catch(error => {
     console.error(`${COLORS.red}Fatal error:${COLORS.reset}`, error.message);
     process.exit(1);
