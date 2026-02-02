@@ -10,15 +10,16 @@ RUN npm run build
 FROM node:18-alpine AS backend-builder
 WORKDIR /app/backend
 COPY backend/package*.json ./
+RUN apk add --no-cache python3 make g++
 RUN npm install --production
 COPY backend/ .
 
 # Stage 3: Final Image (Nginx + Node)
-FROM nginx:alpine
+FROM node:18-alpine
 WORKDIR /app
 
-# Install Node.js and NPM to run the backend alongside Nginx
-RUN apk add --no-cache nodejs npm
+# Install Nginx
+RUN apk add --no-cache nginx && mkdir -p /run/nginx
 
 # Copy Backend
 COPY --from=backend-builder /app/backend /app/backend
@@ -27,7 +28,7 @@ COPY --from=backend-builder /app/backend /app/backend
 COPY --from=frontend-builder /app/frontend/dist /usr/share/nginx/html
 
 # Copy Configs
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/http.d/default.conf
 COPY entrypoint.sh /entrypoint.sh
 
 # Fix line endings (for Windows hosts) and permissions
@@ -39,7 +40,7 @@ ENV PORT=3001
 ENV NODE_ENV=production
 
 # Expose Nginx Port
-EXPOSE 80
+EXPOSE 9006
 
 # Start both services
 ENTRYPOINT ["/entrypoint.sh"]
