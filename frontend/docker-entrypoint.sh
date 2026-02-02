@@ -1,8 +1,9 @@
 #!/bin/sh
 
 # Wait for backend to be available
-echo "Waiting for backend to be available..."
-max_attempts=30
+# The healthcheck should have already verified this, but we add a short wait
+# to ensure DNS resolution is working
+max_attempts=10
 attempt=0
 while [ $attempt -lt $max_attempts ]; do
     if nc -z backend 9007 2>/dev/null; then

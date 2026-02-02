@@ -5,11 +5,8 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-FROM nginx:alpine
-RUN apk add --no-cache netcat-openbsd
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+FROM node:18-alpine
+WORKDIR /app
+COPY --from=build /app/dist /app/dist
 EXPOSE 9006
-CMD ["/docker-entrypoint.sh"]
+CMD ["npx", "serve", "-s", "dist", "-l", "9006"]
